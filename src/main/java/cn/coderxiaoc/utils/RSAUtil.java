@@ -2,23 +2,21 @@ package cn.coderxiaoc.utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RSAUtils {
-    public static Map<String, String> createKeyPairWhitString() throws NoSuchAlgorithmException {
+public class RSAUtil {
+    public static Map<String, String> createKeyPairWithString() throws NoSuchAlgorithmException {
         HashMap<String, String> keyMap = new HashMap<>();
 
         KeyPairGenerator kpg;
         kpg = KeyPairGenerator.getInstance("RSA");
-        kpg.initialize(2048);
+        kpg.initialize(1024);
 
         KeyPair keyPair = kpg.generateKeyPair();
 
@@ -31,11 +29,11 @@ public class RSAUtils {
         keyMap.put("privateKey", privateKeyStr);
         return keyMap;
     }
-    public static Map<String, String> createKeyPairWhitFile(String publicKeyPath, String privateKeyPath)
+    public static Map<String, String> createKeyPairWithFile(String publicKeyPath, String privateKeyPath)
             throws NoSuchAlgorithmException, IOException {
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
+        keyPairGenerator.initialize(1024);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
 

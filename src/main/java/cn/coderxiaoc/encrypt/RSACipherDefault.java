@@ -3,10 +3,8 @@ package cn.coderxiaoc.encrypt;
 import cn.coderxiaoc.exception.CipherException;
 import cn.coderxiaoc.exception.ReadSecretKeyException;
 import cn.coderxiaoc.property.RSAProperty;
-import cn.coderxiaoc.utils.RSAUtils;
+import cn.coderxiaoc.utils.RSAUtil;
 import org.apache.commons.io.IOUtils;
-import org.springframework.beans.factory.BeanClassLoaderAware;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -74,7 +72,7 @@ public class RSACipherDefault extends RSACipherAbstract {
 
                 resourceAsStream =  this.classLoader.getResourceAsStream(rsaProperty.getPrivatePath());
                 byte[] bytes = IOUtils.toByteArray(resourceAsStream);
-                this.privateKey = restorePrivateKey(RSAUtils.readPrivateKeyFromByte(bytes));
+                this.privateKey = restorePrivateKey(RSAUtil.readPrivateKeyFromByte(bytes));
 
             } catch (Exception e) {
                 throw new ReadSecretKeyException(e);
@@ -95,7 +93,7 @@ public class RSACipherDefault extends RSACipherAbstract {
             try {
                 resourceAsStream = this.classLoader.getResourceAsStream(rsaProperty.getPublicPath());
                 byte[] bytes = IOUtils.toByteArray(resourceAsStream);
-                this.publicKey = restorePublicKey(RSAUtils.readPublicKeyFromByte(bytes));
+                this.publicKey = restorePublicKey(RSAUtil.readPublicKeyFromByte(bytes));
             } catch (Exception e) {
                 throw new ReadSecretKeyException( e);
             } finally {
