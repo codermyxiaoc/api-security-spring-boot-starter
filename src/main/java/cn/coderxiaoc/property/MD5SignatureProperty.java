@@ -2,11 +2,9 @@ package cn.coderxiaoc.property;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-
-
-@ConfigurationProperties(prefix = "cipher.aes")
 @Data
-public class AESProperty {
+@ConfigurationProperties(prefix = "web-security.signature.md5")
+public class MD5SignatureProperty {
     private String secretKey;
+    private String delimiter = "|";
 }

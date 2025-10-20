@@ -1,13 +1,15 @@
 package cn.coderxiaoc.advisor;
 
 import cn.coderxiaoc.annotation.Decrypt;
-import cn.coderxiaoc.encrypt.Cipher;
+import cn.coderxiaoc.cipher.Cipher;
+import cn.coderxiaoc.exception.NotCipherClassException;
 import cn.coderxiaoc.exception.decrypt.*;
-import cn.coderxiaoc.handlers.DecryptedHttpInputMessage;
+import cn.coderxiaoc.handlers.DefaultHttpInputMessage;
 import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.util.ObjectUtils;
@@ -20,18 +22,16 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
-/**
- * 请求体解密增强器
- * 作用：对标注 @Decrypt 注解的方法/类，自动解密请求体数据后再进行参数绑定
- */
 @ControllerAdvice
 @Log4j2
-public class RequestDecryptAdvisor implements RequestBodyAdvice {
+public class RequestDecryptAdvisor implements RequestBodyAdvice, Ordered {
     private static final String DECRYPT_RESULT_FIELD_ERROR_MSG = "Non-object type data cannot extract the specified field, nor can it perform object merging or encryption";
     private static final String DECRYPT_INVALID_JSON_MSG = "Original request data is not a valid JSON format, and decryptField cannot be parsed";
     private final Cipher cipher;
-
     public RequestDecryptAdvisor(Cipher cipher) {
+        if (cipher == null) {
+            throw new NotCipherClassException("I need a bean that implements a cipher");
+        }
         this.cipher = cipher;
     }
 
@@ -40,7 +40,6 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice {
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         boolean isSupport = methodParameter.hasMethodAnnotation(Decrypt.class)
                 || methodParameter.getContainingClass().isAnnotationPresent(Decrypt.class);
-        // 补充日志：打印支持状态+目标方法，便于定位请求
         log.debug("RequestDecryptAdvisor support check - method: {}, isSupport: {}",
                 methodParameter.getMethod().getName(), isSupport);
         return isSupport;
@@ -135,7 +134,7 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice {
             }
             log.info("RequestDecryptAdvisor - final decrypted data (method: {}): {}",
                     parameter.getMethod().getName(), new String(finalDecryptedData));
-            return new DecryptedHttpInputMessage(finalDecryptedData, inputMessage.getHeaders());
+            return new DefaultHttpInputMessage(finalDecryptedData, inputMessage.getHeaders());
 
         } catch (IOException e) {
             throw new DecryptIOException("Read encrypted data failed", e);
@@ -144,13 +143,12 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice {
                     parameter.getMethod().getName(), e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            // 捕获其他未知异常，封装为解密未知异常
             throw new DecryptUnknownException("Unknown decrypt exception (method: " + parameter.getMethod().getName() + ")", e);
         }
     }
 
     @Override
-    public Object afterBodyRead(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+    public Object afterBodyRead(Object body,HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         return body;
     }
 
@@ -158,5 +156,10 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice {
     public Object handleEmptyBody(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         log.debug("RequestDecryptAdvisor - handle empty body (method: {})", parameter.getMethod().getName());
         return body;
+    }
+
+    @Override
+    public int getOrder() {
+        return Integer.MIN_VALUE + 1;
     }
 }

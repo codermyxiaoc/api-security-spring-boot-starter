@@ -1,12 +1,14 @@
 package cn.coderxiaoc.advisor;
 
 import cn.coderxiaoc.annotation.Encrypt;
-import cn.coderxiaoc.encrypt.Cipher;
+import cn.coderxiaoc.cipher.Cipher;
+import cn.coderxiaoc.exception.NotCipherClassException;
 import cn.coderxiaoc.exception.encrypt.*;
 import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.Ordered;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
@@ -24,31 +26,21 @@ import java.nio.charset.StandardCharsets;
  */
 @ControllerAdvice
 @Log4j2
-// 明确泛型为 Object，避免 raw type 警告
-public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object> {
+public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object>, Ordered {
 
-    // 英文常量：错误信息（统一维护，符合技术场景表达）
-    private static final String ENCRYPT_SECRET_KEY_EMPTY_MSG = "Encryption key is empty, cannot perform encryption";
     private static final String ENCRYPT_INVALID_JSON_MSG = "Response data is not valid JSON format, cannot parse encryptField";
     private static final String ENCRYPT_FIELD_EMPTY_MSG = "Encrypt field [%s] is empty in response data";
     private static final String ENCRYPT_RESULT_EMPTY_MSG = "Encryption result is empty, check cipher or secret key";
     private static final String UNSUPPORTED_MEDIA_TYPE_MSG = "Unsupported response media type [%s], only application/json is supported for encryption";
 
-    // 加密器（构造注入，参数名与成员变量一致）
     private final Cipher cipher;
-
-    /**
-     * 构造注入加密器
-     * @param cipher 加密器实例（由Spring容器注入，需确保Cipher已正确配置）
-     */
     public ResponseEncryptAdvisor(Cipher cipher) {
+        if (cipher == null) {
+            throw new NotCipherClassException("I need a bean that implements a cipher");
+        }
         this.cipher = cipher;
     }
 
-    /**
-     * 判断当前响应是否需要执行加密逻辑
-     * 规则：1.方法上有 @Encrypt 注解 或 类上有 @Encrypt 注解；2.响应类型为 application/json
-     */
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
         boolean isSupport = returnType.hasMethodAnnotation(Encrypt.class)
@@ -58,10 +50,7 @@ public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object> {
         return isSupport;
     }
 
-    /**
-     * 响应体写出前执行加密逻辑
-     * 核心流程：1.校验响应类型 → 2.获取 @Encrypt 注解 → 3.解析响应数据 → 4.提取待加密字段 → 5.获取加密密钥 → 6.执行加密 → 7.合并加密结果 → 8.返回加密后数据
-     */
+
     @Override
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
@@ -137,8 +126,12 @@ public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object> {
                     returnType.getMethod().getName(), e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            // 捕获未知异常，封装为加密未知异常
             throw new EncryptUnknownException("Unknown encryption exception (method: " + returnType.getMethod().getName() + ")", e);
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return Integer.MIN_VALUE + 1;
     }
 }

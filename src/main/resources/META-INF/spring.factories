@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.coderxiaoc.config.CipherAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.coderxiaoc.config.WebSecurityAutoConfiguration

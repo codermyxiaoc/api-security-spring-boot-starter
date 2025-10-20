@@ -1,4 +1,4 @@
-package cn.coderxiaoc.encrypt;
+package cn.coderxiaoc.cipher;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -11,14 +11,11 @@ public abstract class AESCipherAbstract implements Cipher {
         javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES");
         cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
         byte[] encryptedBytes = cipher.doFinal(data);
-
-
         return Base64.getEncoder().encode(encryptedBytes);
     }
 
     public byte[] decryptObject(String data, SecretKeySpec secretKey) throws Exception {
         byte[] encryptedBytes = Base64.getDecoder().decode(data);
-
         javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES");
         cipher.init(javax.crypto.Cipher.DECRYPT_MODE, secretKey);
         byte[] decryptedBytes = cipher.doFinal(encryptedBytes);

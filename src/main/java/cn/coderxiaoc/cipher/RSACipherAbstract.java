@@ -1,13 +1,13 @@
-package cn.coderxiaoc.encrypt;
+package cn.coderxiaoc.cipher;
 
-import jdk.nashorn.internal.ir.CallNode;
+import cn.coderxiaoc.abstracts.RsaAbstract;
 
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
-public abstract class RSACipherAbstract implements Cipher {
+public abstract class RSACipherAbstract extends RsaAbstract implements Cipher {
     public byte[] encryptObjectSection(byte[] data, PublicKey publicKey) throws Exception {
         javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("RSA");
         cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, publicKey);
@@ -46,19 +46,5 @@ public abstract class RSACipherAbstract implements Cipher {
         return resultDate;
     }
 
-    public  PrivateKey restorePrivateKey(String privateKeyStr) throws Exception {
-        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyStr);
 
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-        return keyFactory.generatePrivate(privateKeySpec);
-    }
-
-    public  PublicKey restorePublicKey(String publicKeyStr) throws Exception {
-        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyStr);
-
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
-        return keyFactory.generatePublic(publicKeySpec);
-    }
 }

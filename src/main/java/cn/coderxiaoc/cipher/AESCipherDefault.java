@@ -1,8 +1,8 @@
-package cn.coderxiaoc.encrypt;
+package cn.coderxiaoc.cipher;
 
 import cn.coderxiaoc.exception.CreateSecretKeyException;
 import cn.coderxiaoc.exception.CipherException;
-import cn.coderxiaoc.property.AESProperty;
+import cn.coderxiaoc.property.AESCipherProperty;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -10,14 +10,14 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class AESCipherDefault extends AESCipherAbstract {
     private final SecretKeySpec secretKey;
-    private final AESProperty aesProperty;
-    public AESCipherDefault(AESProperty aesProperty) {
+    private final AESCipherProperty aesCipherProperty;
+    public AESCipherDefault(AESCipherProperty aesCipherProperty) {
         super();
-        Assert.notNull(aesProperty, "aes property is null");
-        Assert.isTrue(!StringUtils.isEmpty(aesProperty.getSecretKey()), "secretKey is empty");
+        Assert.notNull(aesCipherProperty, "aes property is null");
+        Assert.isTrue(!StringUtils.isEmpty(aesCipherProperty.getSecretKey()), "secretKey is empty");
         try {
-            this.secretKey = this.getSecretKey(aesProperty.getSecretKey());
-            this.aesProperty = aesProperty;
+            this.secretKey = this.getSecretKey(aesCipherProperty.getSecretKey());
+            this.aesCipherProperty = aesCipherProperty;
         } catch (Exception e) {
             throw new CreateSecretKeyException(e);
         }

@@ -16,5 +16,5 @@ public @interface Decrypt {
     String decryptResultField() default "";
     @AliasFor("value")
     String secretKey() default "";
-    boolean merge() default false;
+    boolean merge() default true;
 }
