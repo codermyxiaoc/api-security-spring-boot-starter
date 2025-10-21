@@ -40,11 +40,4 @@ public class TimeoutVerifyUtil {
         }
         return false;
     }
-    private static Verification getVerificationAnnotation(MethodParameter parameter) {
-        Verification verificationAnnotation = parameter.getMethodAnnotation(Verification.class);
-        if (verificationAnnotation != null) {
-            verificationAnnotation = parameter.getContainingClass().getAnnotation(Verification.class);
-        }
-        return verificationAnnotation;
-    }
 }

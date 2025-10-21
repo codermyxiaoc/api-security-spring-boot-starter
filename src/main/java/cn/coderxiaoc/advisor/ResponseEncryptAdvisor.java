@@ -20,10 +20,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import java.nio.charset.StandardCharsets;
 
-/**
- * 响应体加密增强器
- * 作用：对标注 @Encrypt 注解的方法/类，自动加密响应体数据后返回给客户端
- */
 @ControllerAdvice
 @Log4j2
 public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object>, Ordered {
@@ -66,7 +62,6 @@ public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object>, Order
             log.info("ResponseEncryptAdvisor - original response data (method: {}): {}",
                     returnType.getMethod().getName(), originalBodyStr);
 
-            // 3. 获取 @Encrypt 注解（方法注解优先级高于类注解）
             Encrypt encryptAnnotation = returnType.getMethodAnnotation(Encrypt.class);
             if (encryptAnnotation == null) {
                 encryptAnnotation = returnType.getContainingClass().getAnnotation(Encrypt.class);

@@ -3,7 +3,6 @@ package cn.coderxiaoc.config;
 import cn.coderxiaoc.annotation.EnableSignature;
 import cn.coderxiaoc.enums.DefaultSignatureMode;
 import cn.coderxiaoc.property.MD5SignatureProperty;
-import cn.coderxiaoc.property.RSACipherProperty;
 import cn.coderxiaoc.property.RSASignatureProperty;
 import cn.coderxiaoc.property.SignatureProperty;
 import org.springframework.context.annotation.ImportSelector;

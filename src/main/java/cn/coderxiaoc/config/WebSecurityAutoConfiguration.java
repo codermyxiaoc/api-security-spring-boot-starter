@@ -70,30 +70,23 @@ public class WebSecurityAutoConfiguration {
         }
         @Bean
         @ConditionalOnBean({Signature.class, SignatureProperty.class})
-        public RequestVerificationBeforeAdvisor requestSignatureBeforeAdvisor(Signature signature, SignatureProperty signatureProperty) {
+        public RequestVerificationBeforeAdvisor requestVerificationBeforeAdvisor(Signature signature, SignatureProperty signatureProperty) {
             return new RequestVerificationBeforeAdvisor(applicationContext, signature, signatureProperty);
         }
         @Bean
         @ConditionalOnBean({Signature.class, SignatureProperty.class})
-        public RequestVerificationAfterAdvisor requestSignatureAfterAdvisor( Signature signature, SignatureProperty signatureProperty) {
+        public RequestVerificationAfterAdvisor requestVerificationAfterAdvisor( Signature signature, SignatureProperty signatureProperty) {
             return new RequestVerificationAfterAdvisor( applicationContext, signature, signatureProperty);
         }
         @Bean
         @ConditionalOnBean({Signature.class, SignatureProperty.class})
-        public ResponseSignatureBeforeAdvisor responseVerificationBeforeAdvisor(Signature signature) {
+        public ResponseSignatureBeforeAdvisor responseSignatureBeforeAdvisor(Signature signature) {
             return new ResponseSignatureBeforeAdvisor(applicationContext, signature);
         }
         @Bean
         @ConditionalOnBean({Signature.class, SignatureProperty.class})
-        public ResponseSignatureAfterAdvisor responseVerificationAfterAdvisor(Signature signature) {
+        public ResponseSignatureAfterAdvisor responseSignatureAfterAdvisor(Signature signature) {
             return new ResponseSignatureAfterAdvisor(applicationContext,  signature);
-        }
-        @Bean
-        @ConditionalOnProperty(prefix = "web-security.signature", name = "enable-prevent-duplicate", havingValue = "true")
-        @ConditionalOnMissingBean(PreventDuplicate.class)
-        @ConditionalOnClass(name = "org.springframework.data.redis.core.StringRedisTemplate")
-        public RedisPreventDuplicate requestVerificationBeforeAdvisor(SignatureProperty  signature, ObjectProvider<StringRedisTemplate> redisTemplateProvider) {
-            return new RedisPreventDuplicate(signature, redisTemplateProvider.getIfAvailable());
         }
         @Override
         public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -102,6 +95,29 @@ public class WebSecurityAutoConfiguration {
         @Override
         public void setBeanClassLoader(ClassLoader classLoader) {
             this.classLoader = classLoader;
+        }
+    }
+    @Configuration
+    @ConditionalOnClass(name = "org.springframework.data.redis.core.StringRedisTemplate")
+    static class RedisPreventDuplicateConfiguration {
+        @Bean
+        @ConditionalOnProperty(prefix = "web-security.signature", name = "enable-prevent-duplicate", havingValue = "true")
+        @ConditionalOnMissingBean(PreventDuplicate.class)
+        public RedisPreventDuplicate redisPreventDuplicate(
+                SignatureProperty signature,
+                StringRedisTemplate redisTemplate) {
+            return new RedisPreventDuplicate(signature, redisTemplate);
+        }
+    }
+    @Configuration
+    @ConditionalOnMissingClass("org.springframework.data.redis.core.StringRedisTemplate")
+    static class InMemoryPreventDuplicateConfiguration {
+        @Bean
+        @ConditionalOnProperty(prefix = "web-security.signature", name = "enable-prevent-duplicate", havingValue = "true")
+        @ConditionalOnMissingBean(PreventDuplicate.class)
+        public InMemoryPreventDuplicate inMemoryPreventDuplicate(
+                SignatureProperty signature) {
+            return new InMemoryPreventDuplicate(signature);
         }
     }
 

@@ -13,5 +13,7 @@ public @interface Signature {
     String value();
     RuntimeType runtimeType() default RuntimeType.BEFORE;
     String signatureField();
+    String delimiter() default "|";
+    String splitter() default "&";
 
 }

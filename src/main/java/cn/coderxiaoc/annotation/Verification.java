@@ -13,9 +13,11 @@ import java.util.concurrent.TimeUnit;
 public @interface Verification {
     String value();
     RuntimeType runtimeType() default RuntimeType.BEFORE;
-    String signatureField() default  "";
+    String signatureField();
     String preventDuplicateField() default "";
     String timeoutField() default "";
     long timeout() default 0L;
     TimeUnit timeUnit() default TimeUnit.SECONDS;
+    String delimiter() default "|";
+    String splitter() default "&";
 }

@@ -19,19 +19,17 @@ public class RedisPreventDuplicate extends PreventDuplicateAbstract {
         this.redisTemplate = redisTemplate;
     }
     @Override
-    public boolean preventDuplicate( HttpInputMessage inputMessage, MethodParameter parameter) {
+    public boolean preventDuplicate(HttpInputMessage inputMessage, MethodParameter parameter) {
         String preventDuplicateField = getPreventDuplicateField(parameter);
-        if (!StringUtils.hasText(preventDuplicateField)) {
-            preventDuplicateField = signatureProperty.getPreventDuplicateField();
-        }
-        if (!StringUtils.hasText(preventDuplicateField)) {
-            throw new IllegalStateException("preventDuplicateField is not available");
-        }
-
-        String preventDuplicateValue = inputMessage.getHeaders().getFirst(preventDuplicateField);
-        return redisTemplate.opsForValue().setIfAbsent(getPrefix() + ":" + preventDuplicateValue, preventDuplicateValue, signatureProperty.getPreventDuplicateTimeout(), TimeUnit.SECONDS);
+        String preventDuplicateValue = getPreventDuplicateValue(preventDuplicateField, inputMessage);
+        return redisTemplate.opsForValue().setIfAbsent(getPrefix() + ":" + preventDuplicateValue, preventDuplicateValue, getPreventDuplicateTimeout(parameter), getPreventDuplicateTimeUnit( parameter));
     }
     private String getPrefix() {
-        return "preventDuplicate";
+        return signatureProperty.getPreventDuplicatePrefix();
+    }
+
+    @Override
+    SignatureProperty getSignatureProperty() {
+        return signatureProperty;
     }
 }

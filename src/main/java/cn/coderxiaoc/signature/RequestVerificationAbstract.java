@@ -45,9 +45,6 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
         }
 
     }
-
-
-
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         return methodParameter.hasMethodAnnotation(verificationAnnotation) || methodParameter.getContainingClass().isAnnotationPresent(verificationAnnotation);
@@ -56,10 +53,10 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
     @Override
     public HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) throws IOException {
         Verification verification = getVerificationAnnotation(parameter);
-        this.preventDuplicate(inputMessage, parameter);
         this.timeout(inputMessage, verification);
+        this.preventDuplicate(inputMessage, parameter);
         byte[] body = StreamUtils.copyToByteArray(inputMessage.getBody());
-        ParamsParse paramsParse = this.getParamsParse(inputMessage, body);
+        ParamsParse paramsParse = this.getParamsParse(inputMessage, body,  verification);
         String singString = paramsParse.parse(verification.value());
         log.info("RequestVerificationAdvisor - params parse text: {}", singString);
         this.checkSignature(singString, verification, inputMessage);
@@ -69,9 +66,9 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
     @Override
     public Object afterBodyRead(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         Verification verification = getVerificationAnnotation(parameter);
-        this.preventDuplicate(inputMessage, parameter);
         this.timeout(inputMessage, verification);
-        ParamsParse paramsParse = this.getParamsParse(inputMessage, body);
+        this.preventDuplicate(inputMessage, parameter);
+        ParamsParse paramsParse = this.getParamsParse(inputMessage, body,  verification);
         String singString = paramsParse.parse(verification.value());
         log.info("RequestVerificationAdvisor - params parse text: {}", singString);
         this.checkSignature(singString, verification, inputMessage);
@@ -119,14 +116,8 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
                 throw new SignatureMissingException(String.format("Signature field [%s] not found in request headers", signatureField));
             }
             String signatureValue = signatureValues.get(0);
-            if (!this.signature.verify(signatureValue, singString)) {
-                log.error("RequestVerificationAdvisor - {}", "Signature verification failed");
-                throw new SignatureMissingException("Signature verification failed");
-            }
             log.info("RequestVerificationAdvisor - header sing test: {}", signatureValue);
-
             boolean verify = signature.verify(signatureValue, singString);
-
             if (!verify) {
                 String errorMsg = String.format("Signature verification failed Received signature: [%s], Verified parameters: [%s]",
                         signatureValue, singString);
@@ -136,9 +127,9 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
         }
     }
 
-    protected ParamsParse getParamsParse(HttpInputMessage inputMessage, byte[] body) {
+    protected ParamsParse getParamsParse(HttpInputMessage inputMessage, byte[] body, Verification verification) {
         try {
-            ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext);
+            ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext, verification.delimiter(), verification.splitter());
             paramsParse.initEvaluationContext(context -> {
                 Map<String, String> headerMap = new HashMap<>();
                 inputMessage.getHeaders().entrySet().forEach(entry -> {
@@ -155,18 +146,17 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
            throw new CreateParamsParseException(e.getMessage());
         }
     }
-    protected ParamsParse getParamsParse(HttpInputMessage inputMessage, Object body) {
+    protected ParamsParse getParamsParse(HttpInputMessage inputMessage, Object body, Verification verification) {
         try {
-            ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext);
+            Map<String, String> bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
+            Map<String, String> headerMap = new HashMap<>();
+            inputMessage.getHeaders().entrySet().forEach(entry -> {
+                headerMap.put(entry.getKey(), entry.getValue().get(0));
+            });
+            SignatureParams params = new SignatureParams(headerMap, bodyMap);
+
+            ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext, verification.delimiter(), verification.splitter());
             paramsParse.initEvaluationContext(context -> {
-                Map<String, String> headerMap = new HashMap<>();
-                inputMessage.getHeaders().entrySet().forEach(entry -> {
-                    headerMap.put(entry.getKey(), entry.getValue().get(0));
-                });
-
-                Map<String, String> bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
-
-                SignatureParams params = new SignatureParams(headerMap, bodyMap);
                 context.setVariable("params", params);
             });
             return paramsParse;

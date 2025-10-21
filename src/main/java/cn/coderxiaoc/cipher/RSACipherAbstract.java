@@ -3,8 +3,6 @@ package cn.coderxiaoc.cipher;
 import cn.coderxiaoc.abstracts.RsaAbstract;
 
 import java.security.*;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 public abstract class RSACipherAbstract extends RsaAbstract implements Cipher {

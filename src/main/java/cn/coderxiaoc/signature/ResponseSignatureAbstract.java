@@ -6,6 +6,7 @@ import cn.coderxiaoc.exception.verify.CreateParamsParseException;
 import cn.coderxiaoc.exception.verify.InvalidSignatureFieldException;
 import cn.coderxiaoc.exception.verify.SignatureVerificationUnknownException;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationContext;
@@ -71,17 +72,27 @@ public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice
     }
     protected ParamsParse getParamsParse(T body, ServerHttpRequest request, ServerHttpResponse response) {
         try {
+            Map<String, String> headerMap = new HashMap<>();
+            request.getHeaders().entrySet().forEach(entry -> {
+                headerMap.put(entry.getKey(), entry.getValue().get(0));
+            });
+
+            Map<String, String> bodyMap;
+            try {
+                bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
+            } catch (JSONException e) {
+                bodyMap = new HashMap<>();
+                if (body instanceof String) {
+                    bodyMap.put("data", body.toString());
+                } else {
+                    bodyMap.put("data", JSONObject.toJSONString(body));
+                }
+            }
+            SignatureParams params = new SignatureParams(headerMap, bodyMap);
+            SingUtilBean singUtilBean = new SingUtilBean(response);
+
             ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext);
             paramsParse.initEvaluationContext(context -> {
-                Map<String, String> headerMap = new HashMap<>();
-                request.getHeaders().entrySet().forEach(entry -> {
-                    headerMap.put(entry.getKey(), entry.getValue().get(0));
-                });
-
-                Map<String, String> bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
-                SignatureParams params = new SignatureParams(headerMap, bodyMap);
-                SingUtilBean singUtilBean = new SingUtilBean(response);
-
                 context.setVariable("params", params);
                 context.setVariable("request", request);
                 context.setVariable("response", response);
