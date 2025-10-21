@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 public class SignatureProperty {
    private Boolean enablePreventDuplicate = false;
    private String preventDuplicateField = "x-s-nonce";
-   private Long preventDuplicateTimeout = 5L;
+   private Long preventDuplicateTimeout = 30L;
    private TimeUnit preventDuplicateTimeUnit = TimeUnit.SECONDS;
    private String preventDuplicatePrefix = "preventDuplicate";
    private Boolean enableTimeout = false;
    private String timeoutField = "x-s-timestamp";
-   private Long timeout = 5L;
+   private Long timeout = 30L;
    private Long inMemoryCleanInterval = 30L;
    private TimeUnit inMemoryCleanIntervalTimeUnit = TimeUnit.SECONDS;
 }

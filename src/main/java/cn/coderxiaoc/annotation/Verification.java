@@ -16,7 +16,7 @@ public @interface Verification {
     String signatureField();
     String preventDuplicateField() default "";
     String timeoutField() default "";
-    long timeout() default 0L;
+    long timeout() default 30L;
     TimeUnit timeUnit() default TimeUnit.SECONDS;
     String delimiter() default "|";
     String splitter() default "&";
