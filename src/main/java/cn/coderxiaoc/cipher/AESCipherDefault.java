@@ -26,7 +26,7 @@ public class AESCipherDefault extends AESCipherAbstract {
     public byte[] encrypt(byte[] data, String secretKey) {
         Assert.isTrue(data != null || data.length == 0, "data is empty");
         try {
-            if (StringUtils.isEmpty(secretKey)) {
+            if (!StringUtils.hasText(secretKey)) {
                 return this.encryptObject(data, this.secretKey);
             }
             return this.encryptObject(data, this.getSecretKey(secretKey));
@@ -39,7 +39,7 @@ public class AESCipherDefault extends AESCipherAbstract {
     public byte[] decrypt(String data, String secretKey) {
         Assert.isTrue(data != null || data.length() == 0, "data is empty");
         try {
-            if (StringUtils.isEmpty(secretKey)) {
+            if (!StringUtils.hasText(secretKey)) {
                 return this.decryptObject(data, this.secretKey);
             }
             return this.decryptObject(data, this.getSecretKey(secretKey));

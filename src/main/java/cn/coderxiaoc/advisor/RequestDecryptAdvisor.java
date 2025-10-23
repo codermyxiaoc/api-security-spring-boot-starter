@@ -70,6 +70,7 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice, Ordered {
                 try {
                     JSONObject encryptedReqJson = JSONObject.parseObject(encryptedDataStr);
                     dataToDecrypt = encryptedReqJson.getString(decryptField);
+
                     if (!StringUtils.hasText(dataToDecrypt)) {
                         throw new DecryptFieldEmptyException("Decrypt field [" + decryptField + "] is empty in request");
                     }

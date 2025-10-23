@@ -10,6 +10,10 @@
 - **超时控制**：验证请求时间戳，拒绝超时请求
 - **响应签名**：自动为响应生成签名，供客户端验证响应完整性
 
+## demo示例
+
+[codermyxiaoc/web-security-ruoyi: 使用接口加密对ruoyi框架的大部分接口进行接口入参加密返回值加密](https://github.com/codermyxiaoc/web-security-ruoyi)
+
 ## 快速集成
 
 ### 环境要求

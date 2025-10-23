@@ -7,6 +7,7 @@ import cn.coderxiaoc.handlers.DefaultHttpInputMessage;
 import cn.coderxiaoc.property.SignatureProperty;
 import cn.coderxiaoc.utils.TimeoutVerifyUtil;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationContext;
@@ -136,7 +137,13 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
                     headerMap.put(entry.getKey(), entry.getValue().get(0));
                 });
 
-                Map<String, String> bodyMap = JSON.parseObject(new String(body), HashMap.class);
+                Map<String, String> bodyMap =null;
+                try {
+                    bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
+                } catch (JSONException e) {
+                    bodyMap = new HashMap<>();
+                    bodyMap.put("data", new String(body));
+                }
 
                 SignatureParams params = new SignatureParams(headerMap, bodyMap);
                 context.setVariable("params", params);
@@ -148,7 +155,13 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
     }
     protected ParamsParse getParamsParse(HttpInputMessage inputMessage, Object body, Verification verification) {
         try {
-            Map<String, String> bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
+            Map<String, String> bodyMap =null;
+            try {
+                bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
+            } catch (JSONException e) {
+                bodyMap = new HashMap<>();
+                bodyMap.put("data", body.toString());
+            }
             Map<String, String> headerMap = new HashMap<>();
             inputMessage.getHeaders().entrySet().forEach(entry -> {
                 headerMap.put(entry.getKey(), entry.getValue().get(0));
