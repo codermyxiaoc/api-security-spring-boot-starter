@@ -54,6 +54,7 @@ public class InMemoryPreventDuplicate extends PreventDuplicateAbstract {
         if (existingExpireTime > currentTime) {
             return false;
         }
+        cache.put(key, expireTime);
         return true;
     }
 

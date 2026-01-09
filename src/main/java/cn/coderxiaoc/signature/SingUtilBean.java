@@ -1,17 +1,20 @@
 package cn.coderxiaoc.signature;
 import org.springframework.http.server.ServerHttpResponse;
 
+import java.security.SecureRandom;
+
 public class SingUtilBean {
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final String CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     private ServerHttpResponse response;
     public SingUtilBean(ServerHttpResponse response) {
         this.response = response;
     }
-    private static final String  str = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     public String getNonce(String field, Integer len) {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder(len);
         for (int i = 0; i < len; i++) {
-            int index = (int) (Math.random() * str.length());
-            result.append(str.charAt(index));
+            int index = RANDOM.nextInt(CHARS.length());
+            result.append(CHARS.charAt(index));
         }
         String nonce = result.toString();
         response.getHeaders().add(field, nonce);

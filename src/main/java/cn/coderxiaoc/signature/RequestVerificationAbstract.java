@@ -21,6 +21,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdvice;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,16 +29,16 @@ import java.util.Map;
 @Log4j2
 public abstract class RequestVerificationAbstract  implements RequestBodyAdvice {
     private final ApplicationContext applicationContext;
-    private final Signature signature;
+    private final SignatureExecutor signatureExecutor;
     private final SignatureProperty signatureProperty;
     private PreventDuplicate preventDuplicate;
     private final Class<Verification> verificationAnnotation = Verification.class;
-    public RequestVerificationAbstract(ApplicationContext applicationContext, Signature  signature, SignatureProperty signatureProperty) {
-        this.signature = signature;
+    public RequestVerificationAbstract(ApplicationContext applicationContext, SignatureExecutor signatureExecutor, SignatureProperty signatureProperty) {
+        this.signatureExecutor = signatureExecutor;
         this.applicationContext = applicationContext;
         this.signatureProperty = signatureProperty;
 
-        if (signatureProperty.getEnablePreventDuplicate()) {
+        if (Boolean.TRUE.equals(signatureProperty.getEnablePreventDuplicate())) {
             PreventDuplicate preventDuplicateBean = applicationContext.getBean(PreventDuplicate.class);
             if (preventDuplicateBean == null) {
                 throw new IllegalArgumentException("PreventDuplicate is required when enablePreventDuplicate is true");
@@ -85,7 +86,7 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
     }
 
     protected void preventDuplicate(HttpInputMessage inputMessage, MethodParameter parameter) {
-        if (!this.signatureProperty.getEnablePreventDuplicate()) {
+        if (!Boolean.TRUE.equals(this.signatureProperty.getEnablePreventDuplicate())) {
             return;
         }
         boolean flag = this.preventDuplicate.preventDuplicate(inputMessage, parameter);
@@ -94,10 +95,10 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
         }
     }
     protected void timeout(HttpInputMessage inputMessage, Verification verification) {
-        if (!this.signatureProperty.getEnableTimeout()) {
+        if (!Boolean.TRUE.equals(this.signatureProperty.getEnableTimeout())) {
             return;
         }
-        boolean flag = TimeoutVerifyUtil.timeoutVerify(inputMessage,verification , this.signatureProperty.getPreventDuplicateTimeout(), this.signatureProperty.getTimeoutField());
+        boolean flag = TimeoutVerifyUtil.timeoutVerify(inputMessage,verification , this.signatureProperty.getTimeout(), this.signatureProperty.getTimeoutField());
         if (flag) {
             throw new RequestTimeoutException("timeoutValue is out of range");
         }
@@ -118,7 +119,8 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
             }
             String signatureValue = signatureValues.get(0);
             log.info("RequestVerificationAdvisor - header sing test: {}", signatureValue);
-            boolean verify = signature.verify(signatureValue, singString);
+            String algorithm = resolvePlaceholder(verification.algorithm());
+            boolean verify = signatureExecutor.verify(signatureValue, singString, algorithm);
             if (!verify) {
                 String errorMsg = String.format("Signature verification failed Received signature: [%s], Verified parameters: [%s]",
                         signatureValue, singString);
@@ -132,17 +134,20 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
         try {
             ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext, verification.delimiter(), verification.splitter());
             paramsParse.initEvaluationContext(context -> {
-                Map<String, String> headerMap = new HashMap<>();
-                inputMessage.getHeaders().entrySet().forEach(entry -> {
-                    headerMap.put(entry.getKey(), entry.getValue().get(0));
-                });
+                Map<String, Object> headerMap = new HashMap<>();
+                inputMessage.getHeaders().forEach((key, value) -> headerMap.put(key, value.get(0)));
 
-                Map<String, String> bodyMap =null;
+                Map<String, Object> bodyMap;
+                String bodyText = new String(body, StandardCharsets.UTF_8);
                 try {
-                    bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
+                    bodyMap = JSON.parseObject(bodyText, HashMap.class);
                 } catch (JSONException e) {
                     bodyMap = new HashMap<>();
-                    bodyMap.put("data", new String(body));
+                    bodyMap.put("data", bodyText);
+                }
+                if (bodyMap == null) {
+                    bodyMap = new HashMap<>();
+                    bodyMap.put("data", bodyText);
                 }
 
                 SignatureParams params = new SignatureParams(headerMap, bodyMap);
@@ -155,17 +160,19 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
     }
     protected ParamsParse getParamsParse(HttpInputMessage inputMessage, Object body, Verification verification) {
         try {
-            Map<String, String> bodyMap =null;
+            Map<String, Object> bodyMap;
             try {
                 bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
             } catch (JSONException e) {
                 bodyMap = new HashMap<>();
-                bodyMap.put("data", body.toString());
+                bodyMap.put("data", body == null ? "" : body.toString());
             }
-            Map<String, String> headerMap = new HashMap<>();
-            inputMessage.getHeaders().entrySet().forEach(entry -> {
-                headerMap.put(entry.getKey(), entry.getValue().get(0));
-            });
+            if (bodyMap == null) {
+                bodyMap = new HashMap<>();
+                bodyMap.put("data", body == null ? "" : body.toString());
+            }
+            Map<String, Object> headerMap = new HashMap<>();
+            inputMessage.getHeaders().forEach((key, value) -> headerMap.put(key, value.get(0)));
             SignatureParams params = new SignatureParams(headerMap, bodyMap);
 
             ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext, verification.delimiter(), verification.splitter());
@@ -176,5 +183,12 @@ public abstract class RequestVerificationAbstract  implements RequestBodyAdvice 
         } catch (Exception e) {
             throw new CreateParamsParseException(e.getMessage());
         }
+    }
+
+    private String resolvePlaceholder(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        return applicationContext.getEnvironment().resolvePlaceholders(value);
     }
 }

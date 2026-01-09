@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class ParamsParseAbstract implements ParamsParse {
@@ -41,12 +42,14 @@ public abstract class ParamsParseAbstract implements ParamsParse {
         return doParse(params);
     }
     public String doParse(String params) {
+        this.paramsSort.clear();
+        this.paramsMap.clear();
         this.split(params);
         this.parseExpression();
         return this.assembleParams();
     }
     private void split(String params) {
-        String[] split = params.split(splitter());
+        String[] split = params.split(Pattern.quote(splitter()));
         for (String s : split) {
             this.paramsSort.add(s);
             this.paramsMap.put(s, "");

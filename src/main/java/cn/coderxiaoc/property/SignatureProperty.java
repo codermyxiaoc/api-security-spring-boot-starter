@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 @Data
 @ConfigurationProperties(prefix = "web-security.signature")
 public class SignatureProperty {
+   private String defaultAlgorithm;
    private Boolean enablePreventDuplicate = false;
    private String preventDuplicateField = "x-s-nonce";
    private Long preventDuplicateTimeout = 30L;

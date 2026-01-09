@@ -1,7 +1,7 @@
 package cn.coderxiaoc.advisor;
 
 import cn.coderxiaoc.annotation.Encrypt;
-import cn.coderxiaoc.cipher.Cipher;
+import cn.coderxiaoc.cipher.CipherExecutor;
 import cn.coderxiaoc.exception.NotCipherClassException;
 import cn.coderxiaoc.exception.encrypt.*;
 import com.alibaba.fastjson2.JSONException;
@@ -9,6 +9,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
@@ -29,12 +30,15 @@ public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object>, Order
     private static final String ENCRYPT_RESULT_EMPTY_MSG = "Encryption result is empty, check cipher or secret key";
     private static final String UNSUPPORTED_MEDIA_TYPE_MSG = "Unsupported response media type [%s], only application/json is supported for encryption";
 
-    private final Cipher cipher;
-    public ResponseEncryptAdvisor(Cipher cipher) {
-        if (cipher == null) {
-            throw new NotCipherClassException("I need a bean that implements a cipher");
+    private final CipherExecutor cipherExecutor;
+    private final Environment environment;
+
+    public ResponseEncryptAdvisor(CipherExecutor cipherExecutor, Environment environment) {
+        if (cipherExecutor == null) {
+            throw new NotCipherClassException("CipherExecutor is required");
         }
-        this.cipher = cipher;
+        this.cipherExecutor = cipherExecutor;
+        this.environment = environment;
     }
 
     @Override
@@ -86,9 +90,12 @@ public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object>, Order
             String secretKey = StringUtils.hasText(encryptAnnotation.value())
                     ? encryptAnnotation.value()
                     : encryptAnnotation.secretKey();
+            secretKey = resolvePlaceholder(secretKey);
+            String algorithm = resolvePlaceholder(encryptAnnotation.algorithm());
+
             byte[] encryptedBytes;
             try {
-                encryptedBytes = cipher.encrypt(dataToEncrypt.getBytes(StandardCharsets.UTF_8), secretKey);
+                encryptedBytes = cipherExecutor.encrypt(dataToEncrypt.getBytes(StandardCharsets.UTF_8), algorithm, secretKey);
                 if (ObjectUtils.isEmpty(encryptedBytes)) {
                     throw new EncryptFailedException(ENCRYPT_RESULT_EMPTY_MSG);
                 }
@@ -128,5 +135,12 @@ public class ResponseEncryptAdvisor implements ResponseBodyAdvice<Object>, Order
     @Override
     public int getOrder() {
         return Integer.MIN_VALUE + 1;
+    }
+
+    private String resolvePlaceholder(String value) {
+        if (!StringUtils.hasText(value) || environment == null) {
+            return value;
+        }
+        return environment.resolvePlaceholders(value);
     }
 }

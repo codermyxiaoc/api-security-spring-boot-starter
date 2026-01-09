@@ -3,6 +3,7 @@ package cn.coderxiaoc.advisor;
 import cn.coderxiaoc.annotation.Signature;
 import cn.coderxiaoc.enums.RuntimeType;
 import cn.coderxiaoc.signature.ResponseSignatureAbstract;
+import cn.coderxiaoc.signature.SignatureExecutor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.MethodParameter;
@@ -13,8 +14,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 @ControllerAdvice
 @Log4j2
 public class ResponseSignatureAfterAdvisor extends ResponseSignatureAbstract<Object> implements Ordered {
-    public ResponseSignatureAfterAdvisor(ApplicationContext applicationContext, cn.coderxiaoc.signature.Signature signature) {
-        super(applicationContext, signature);
+    public ResponseSignatureAfterAdvisor(ApplicationContext applicationContext, SignatureExecutor signatureExecutor) {
+        super(applicationContext, signatureExecutor);
     }
 
     @Override

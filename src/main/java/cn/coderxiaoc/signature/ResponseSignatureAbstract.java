@@ -23,12 +23,12 @@ import java.util.Map;
 
 @Log4j2
 public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice<T> {
-    private final cn.coderxiaoc.signature.Signature signature;
+    private final SignatureExecutor signatureExecutor;
     private final Class<Signature> signatureAnnotation = Signature.class;
     private final ApplicationContext applicationContext;
-    public ResponseSignatureAbstract(ApplicationContext applicationContext, cn.coderxiaoc.signature.Signature signature) {
+    public ResponseSignatureAbstract(ApplicationContext applicationContext, SignatureExecutor signatureExecutor) {
         this.applicationContext = applicationContext;
-        this.signature = signature;
+        this.signatureExecutor = signatureExecutor;
     }
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
@@ -45,7 +45,7 @@ public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice
                log.error("ResponseSignatureAdvisor - {}", "signatureField in @Signature is empty");
                throw new InvalidSignatureFieldException("signatureField in @Signature is empty");
            }
-           ParamsParse paramsParse = getParamsParse(body, request, response);
+           ParamsParse paramsParse = getParamsParse(body, request, response, signature);
            String params = paramsParse.parse(signature.value());
            log.info("ResponseSignatureAdvisor - params parse text: {}", params);
 
@@ -53,7 +53,8 @@ public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice
                log.error("ResponseSignatureAdvisor - {}", "Parsed signature parameters are empty");
                throw new SignatureParamsEmptyException("Parsed signature parameters are empty");
            }
-           String sign = this.signature.sign(params);
+           String algorithm = resolvePlaceholder(signature.algorithm());
+           String sign = this.signatureExecutor.sign(params, algorithm);
            log.info("ResponseSignatureAdvisor - params sign text: {}", sign);
            response.getHeaders().add(signatureField, sign);
            return body;
@@ -70,14 +71,12 @@ public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice
         }
         return signature;
     }
-    protected ParamsParse getParamsParse(T body, ServerHttpRequest request, ServerHttpResponse response) {
+    protected ParamsParse getParamsParse(T body, ServerHttpRequest request, ServerHttpResponse response, Signature signature) {
         try {
-            Map<String, String> headerMap = new HashMap<>();
-            request.getHeaders().entrySet().forEach(entry -> {
-                headerMap.put(entry.getKey(), entry.getValue().get(0));
-            });
+            Map<String, Object> headerMap = new HashMap<>();
+            request.getHeaders().forEach((key, value) -> headerMap.put(key, value.get(0)));
 
-            Map<String, String> bodyMap;
+            Map<String, Object> bodyMap;
             try {
                 bodyMap = JSON.parseObject(JSONObject.toJSONString(body), HashMap.class);
             } catch (JSONException e) {
@@ -88,10 +87,14 @@ public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice
                     bodyMap.put("data", JSONObject.toJSONString(body));
                 }
             }
+            if (bodyMap == null) {
+                bodyMap = new HashMap<>();
+                bodyMap.put("data", body == null ? "" : body.toString());
+            }
             SignatureParams params = new SignatureParams(headerMap, bodyMap);
             SingUtilBean singUtilBean = new SingUtilBean(response);
 
-            ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext);
+            ParamsParseAbstract paramsParse = new DefaultParamsParse(applicationContext, signature.delimiter(), signature.splitter());
             paramsParse.initEvaluationContext(context -> {
                 context.setVariable("params", params);
                 context.setVariable("request", request);
@@ -102,5 +105,12 @@ public abstract class ResponseSignatureAbstract<T> implements ResponseBodyAdvice
         } catch (Exception e) {
             throw new CreateParamsParseException(e.getMessage());
         }
+    }
+
+    private String resolvePlaceholder(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        return applicationContext.getEnvironment().resolvePlaceholders(value);
     }
 }

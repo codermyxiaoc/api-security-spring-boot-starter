@@ -1,8 +1,6 @@
 package cn.coderxiaoc.annotation;
 
-import cn.coderxiaoc.config.CipherRegisterImportSelector;
 import cn.coderxiaoc.enums.DefaultCipherMode;
-import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,7 +9,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import(CipherRegisterImportSelector.class)
 public @interface EnableCipher {
     DefaultCipherMode mode() default DefaultCipherMode.AES;
 }

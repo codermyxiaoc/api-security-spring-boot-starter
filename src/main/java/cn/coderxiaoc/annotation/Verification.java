@@ -14,6 +14,7 @@ public @interface Verification {
     String value();
     RuntimeType runtimeType() default RuntimeType.BEFORE;
     String signatureField();
+    String algorithm() default "";
     String preventDuplicateField() default "";
     String timeoutField() default "";
     long timeout() default 30L;

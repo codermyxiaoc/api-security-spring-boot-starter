@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 public class MD5SignatureAbstractDefault implements Signature {
+    private static final String ALGORITHM = "md5";
     private final MD5SignatureProperty signatureProperty;
     public MD5SignatureAbstractDefault(MD5SignatureProperty signatureProperty) {
         Assert.notNull(signatureProperty, "signatureProperty can not be null");
@@ -36,6 +37,10 @@ public class MD5SignatureAbstractDefault implements Signature {
         } catch (Exception e) {
             throw new MD5Exception("MD5 sign error");
         }
+    }
+    @Override
+    public String algorithm() {
+        return ALGORITHM;
     }
     @Override
     public String sign(String params) {

@@ -4,7 +4,7 @@ import cn.coderxiaoc.annotation.Verification;
 import cn.coderxiaoc.enums.RuntimeType;
 import cn.coderxiaoc.property.SignatureProperty;
 import cn.coderxiaoc.signature.RequestVerificationAbstract;
-import cn.coderxiaoc.signature.Signature;
+import cn.coderxiaoc.signature.SignatureExecutor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.MethodParameter;
@@ -20,8 +20,8 @@ import java.lang.reflect.Type;
 @ControllerAdvice
 public class RequestVerificationBeforeAdvisor extends RequestVerificationAbstract implements Ordered {
 
-    public RequestVerificationBeforeAdvisor(ApplicationContext applicationContext, Signature  signature, SignatureProperty signatureProperty) {
-        super(applicationContext, signature, signatureProperty);
+    public RequestVerificationBeforeAdvisor(ApplicationContext applicationContext, SignatureExecutor signatureExecutor, SignatureProperty signatureProperty) {
+        super(applicationContext, signatureExecutor, signatureProperty);
 
     }
 
@@ -45,7 +45,7 @@ public class RequestVerificationBeforeAdvisor extends RequestVerificationAbstrac
 
     @Override
     public Object handleEmptyBody(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return inputMessage;
+        return body;
     }
 
     @Override

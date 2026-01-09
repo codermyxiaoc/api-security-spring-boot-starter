@@ -1,7 +1,7 @@
 package cn.coderxiaoc.advisor;
 
 import cn.coderxiaoc.annotation.Decrypt;
-import cn.coderxiaoc.cipher.Cipher;
+import cn.coderxiaoc.cipher.CipherExecutor;
 import cn.coderxiaoc.exception.NotCipherClassException;
 import cn.coderxiaoc.exception.decrypt.*;
 import cn.coderxiaoc.handlers.DefaultHttpInputMessage;
@@ -10,6 +10,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.util.ObjectUtils;
@@ -27,12 +28,15 @@ import java.nio.charset.StandardCharsets;
 public class RequestDecryptAdvisor implements RequestBodyAdvice, Ordered {
     private static final String DECRYPT_RESULT_FIELD_ERROR_MSG = "Non-object type data cannot extract the specified field, nor can it perform object merging or encryption";
     private static final String DECRYPT_INVALID_JSON_MSG = "Original request data is not a valid JSON format, and decryptField cannot be parsed";
-    private final Cipher cipher;
-    public RequestDecryptAdvisor(Cipher cipher) {
-        if (cipher == null) {
-            throw new NotCipherClassException("I need a bean that implements a cipher");
+    private final CipherExecutor cipherExecutor;
+    private final Environment environment;
+
+    public RequestDecryptAdvisor(CipherExecutor cipherExecutor, Environment environment) {
+        if (cipherExecutor == null) {
+            throw new NotCipherClassException("CipherExecutor is required");
         }
-        this.cipher = cipher;
+        this.cipherExecutor = cipherExecutor;
+        this.environment = environment;
     }
 
 
@@ -83,11 +87,12 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice, Ordered {
             String secretKey = StringUtils.hasText(decryptAnnotation.value())
                     ? decryptAnnotation.value()
                     : decryptAnnotation.secretKey();
-
+            secretKey = resolvePlaceholder(secretKey);
+            String algorithm = resolvePlaceholder(decryptAnnotation.algorithm());
 
             byte[] decryptedBytes;
             try {
-                decryptedBytes = cipher.decrypt(dataToDecrypt, secretKey);
+                decryptedBytes = cipherExecutor.decrypt(dataToDecrypt, algorithm, secretKey);
                 if (ObjectUtils.isEmpty(decryptedBytes)) {
                     throw new DecryptFailedException("Decrypt result is empty, check cipher or secret key");
                 }
@@ -149,7 +154,7 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice, Ordered {
     }
 
     @Override
-    public Object afterBodyRead(Object body,HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+    public Object afterBodyRead(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
         return body;
     }
 
@@ -162,5 +167,12 @@ public class RequestDecryptAdvisor implements RequestBodyAdvice, Ordered {
     @Override
     public int getOrder() {
         return Integer.MIN_VALUE + 1;
+    }
+
+    private String resolvePlaceholder(String value) {
+        if (!StringUtils.hasText(value) || environment == null) {
+            return value;
+        }
+        return environment.resolvePlaceholders(value);
     }
 }

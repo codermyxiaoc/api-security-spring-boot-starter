@@ -5,16 +5,18 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 public class RSASignatureAbstractDefault extends RSASignatureAbstract {
-    private final RSASignatureProperty rsaSignatureProperty;
-    private final ClassLoader classLoader;
+    private static final String ALGORITHM = "rsa";
     public RSASignatureAbstractDefault(RSASignatureProperty rsaSignatureProperty, ClassLoader classLoader) {
         super();
         Assert.notNull(rsaSignatureProperty, "rsa property is null");
         Assert.isTrue(StringUtils.hasText(rsaSignatureProperty.getPrivateKey()) || StringUtils.hasText(rsaSignatureProperty.getPrivatePath()), "private key is null");
         Assert.isTrue(StringUtils.hasText(rsaSignatureProperty.getPublicKey()) || StringUtils.hasText(rsaSignatureProperty.getPublicPath()), "public key is null");
-        this.rsaSignatureProperty = rsaSignatureProperty;
-        this.classLoader = classLoader;
         loadSecretKey(rsaSignatureProperty.getPrivateKey(), rsaSignatureProperty.getPublicKey(), classLoader, rsaSignatureProperty.getPrivatePath(), rsaSignatureProperty.getPublicPath());
+    }
+
+    @Override
+    public String algorithm() {
+        return ALGORITHM;
     }
 
     @Override
